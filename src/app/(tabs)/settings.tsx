@@ -9,6 +9,7 @@ import { Screen } from '@/components/Screen';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { buildQuotePool, countQuotesByCategory } from '@/domain/quotes';
 import { useSettingsStore, type ThemePreference } from '@/store/settings';
+import type { TextPosition } from '@/wallpaper/draw';
 import { spacing } from '@/theme';
 
 const THEME_OPTIONS = [
@@ -17,11 +18,18 @@ const THEME_OPTIONS = [
   { value: 'dark', label: 'Dark' },
 ] as const satisfies readonly { value: ThemePreference; label: string }[];
 
+const POSITION_OPTIONS = [
+  { value: 'lower', label: 'Lower third' },
+  { value: 'center', label: 'Middle' },
+] as const satisfies readonly { value: TextPosition; label: string }[];
+
 export default function SettingsScreen() {
   const selected = useSettingsStore((s) => s.selectedCategories);
   const toggleCategory = useSettingsStore((s) => s.toggleCategory);
   const themePreference = useSettingsStore((s) => s.themePreference);
   const setThemePreference = useSettingsStore((s) => s.setThemePreference);
+  const textPosition = useSettingsStore((s) => s.textPosition);
+  const setTextPosition = useSettingsStore((s) => s.setTextPosition);
 
   const counts = useMemo(() => countQuotesByCategory(), []);
   const poolSize = useMemo(() => buildQuotePool(selected).length, [selected]);
@@ -34,6 +42,17 @@ export default function SettingsScreen() {
         shown.
       </AppText>
       <CategoryPicker selected={selected} onToggle={toggleCategory} counts={counts} />
+
+      <SectionHeader title="Wallpaper" />
+      <AppText variant="caption" tone="secondary" style={styles.hint}>
+        Where the quote sits. Both keep it clear of the lock screen clock and widgets.
+      </AppText>
+      <SegmentedControl
+        accessibilityLabel="Text position"
+        options={POSITION_OPTIONS}
+        value={textPosition}
+        onChange={setTextPosition}
+      />
 
       <SectionHeader title="Appearance" />
       <SegmentedControl

@@ -1,16 +1,18 @@
 {
   "name": "daily-quote-wallpaper",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "main": "index",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "lint": "expo lint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts",
     "test": "jest",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "render:samples": "tsx --tsconfig scripts/tsconfig.json scripts/render-samples.ts",
+    "web": "node scripts/copy-canvaskit.cjs && expo start --web"
   },
   "dependencies": {
     "@expo/metro-runtime": "~57.0.16",
@@ -49,6 +51,7 @@
   "devDependencies": {
     "@react-native/jest-preset": "^0.86.3",
     "@types/jest": "^29.5.14",
+    "@types/node": "^22.20.4",
     "@types/react": "~19.2.2",
     "eslint": "^9.39.5",
     "eslint-config-expo": "~57.0.2",

@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 
 import { STYLE_IDS, type StyleId } from '@/domain/styles';
 import { CATEGORY_IDS, type CategoryId, type TimeOfDay } from '@/domain/types';
+import type { TextPosition } from '@/wallpaper/draw';
 
 import { deviceStorage } from './storage';
 
@@ -14,6 +15,8 @@ interface SettingsValues {
   /** When the new wallpaper takes over each day. */
   dailyTime: TimeOfDay;
   enabledStyles: StyleId[];
+  /** Where the quote sits on the wallpaper. */
+  textPosition: TextPosition;
 }
 
 interface SettingsActions {
@@ -21,6 +24,7 @@ interface SettingsActions {
   setCategories: (ids: CategoryId[]) => void;
   setThemePreference: (preference: ThemePreference) => void;
   setDailyTime: (time: TimeOfDay) => void;
+  setTextPosition: (position: TextPosition) => void;
 }
 
 export type SettingsState = SettingsValues & SettingsActions;
@@ -30,6 +34,7 @@ export const DEFAULT_SETTINGS: SettingsValues = {
   themePreference: 'system',
   dailyTime: { hour: 6, minute: 0 },
   enabledStyles: [...STYLE_IDS],
+  textPosition: 'lower',
 };
 
 /** Keeps category order stable (library order) no matter how they were toggled. */
@@ -63,17 +68,20 @@ export const useSettingsStore = create<SettingsState>()(
       setThemePreference: (themePreference) => set({ themePreference }),
 
       setDailyTime: (dailyTime) => set({ dailyTime }),
+
+      setTextPosition: (textPosition) => set({ textPosition }),
     }),
     {
       name: 'settings',
       version: 1,
       storage: deviceStorage,
-      partialize: ({ selectedCategories, themePreference, dailyTime, enabledStyles }) => ({
+      partialize: ({
         selectedCategories,
         themePreference,
         dailyTime,
         enabledStyles,
-      }),
+        textPosition,
+      }) => ({ selectedCategories, themePreference, dailyTime, enabledStyles, textPosition }),
     }
   )
 );

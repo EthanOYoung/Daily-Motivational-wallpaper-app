@@ -39,3 +39,9 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Skia WebAssembly build, copied by scripts/copy-canvaskit.cjs
+/public/canvaskit.wasm
+
+# Sample renders from npm run render:samples
+/samples

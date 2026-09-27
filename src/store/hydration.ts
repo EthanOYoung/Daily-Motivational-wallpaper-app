@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 import { useDailyStore } from './daily';
+import { useRenderStore } from './renders';
 import { useSettingsStore } from './settings';
 
 interface PersistApi {
@@ -8,7 +9,11 @@ interface PersistApi {
   onFinishHydration: (listener: () => void) => () => void;
 }
 
-const persisted: PersistApi[] = [useSettingsStore.persist, useDailyStore.persist];
+const persisted: PersistApi[] = [
+  useSettingsStore.persist,
+  useDailyStore.persist,
+  useRenderStore.persist,
+];
 
 /** Registers another persisted store so startup waits for it too. */
 export function registerPersistedStore(api: PersistApi) {

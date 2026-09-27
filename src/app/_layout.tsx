@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { useEffect, useMemo } from 'react';
 
+import { ToastHost } from '@/components/Toast';
 import { useDayTicker } from '@/hooks/useDayTicker';
 import { usePlanSync } from '@/hooks/usePlanSync';
 import { useStoresHydrated } from '@/store/hydration';
@@ -60,6 +61,7 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
       </Stack>
+      <ToastHost />
     </ThemeProvider>
   );
 }

@@ -38,12 +38,32 @@ must be on the same Wi-Fi; if they can't see each other, use `npx expo start --g
 6. Close the app completely and reopen it: your categories, theme and today's quote are still
    there.
 
+### Stage 2 — wallpaper rendering
+
+1. Run `npx expo start --go` and open the app in Expo Go.
+2. **Today** now shows a phone-shaped preview of today's wallpaper. The quote sits in the
+   middle-to-lower part of the screen, clear of the lock screen clock and widgets, with the
+   author underneath.
+3. Tap **New quote**: the quote changes and so does the background (six styles: Dawn, Sea Glass,
+   Sage, Midnight, Linen, Dusk). Tap it a few times to see them all.
+4. Tap **Save** and allow photo access. A "Saved to Photos" message appears. In Photos (iPhone) or
+   Gallery/Google Photos (Android), open the image and check its details: it matches your screen
+   resolution (for example 1179 × 2556 on an iPhone 15, 1080 × 2400 on many Android phones).
+5. Tap **Share**: the system share sheet opens with the image.
+6. In **Settings → Wallpaper**, switch **Text position** between Lower third and Middle; the Today
+   preview redraws.
+7. Optional, on your computer: `npm run render:samples` draws every style at iPhone and Android
+   resolutions into `samples/` (including `contact-sheet.jpg`) and reports text contrast, using
+   the same drawing code as the app. `npm run web` opens a browser preview of the app.
+
 ## Development
 
 ```sh
-npm test            # unit tests (quote library, no-repeat rotation, planning, dates)
-npm run typecheck   # TypeScript
-npm run lint        # ESLint
+npm test                # unit tests: quote library, no-repeat rotation, planning, dates, and
+                        # the wallpaper renderer (layout and contrast, run on CanvasKit)
+npm run typecheck       # TypeScript (app and scripts)
+npm run lint            # ESLint
+npm run render:samples  # sample wallpapers for every style in samples/
 ```
 
 ### Project structure
@@ -52,11 +72,30 @@ npm run lint        # ESLint
 src/app/            Expo Router screens (tabs: Today, Settings)
 src/data/           quotes.json — the bundled quote library
 src/domain/         Pure TypeScript logic: categories, quote pool, no-repeat picker, daily plan
+src/wallpaper/      Skia renderer: six styles, text layout, device fonts, image files
 src/store/          Zustand stores persisted to AsyncStorage
-src/components/     Shared UI (text, buttons, cards, category picker)
+src/services/       Saving to Photos and sharing
+src/components/     Shared UI (text, buttons, cards, category picker, wallpaper preview)
 src/theme/          Colours for light/dark mode, spacing and typography
+scripts/            Sample renderer (Node + CanvasKit) and web helpers
 assets/fonts/       Bundled fonts (SIL Open Font License, see OFL.txt)
 ```
+
+## How wallpapers are drawn
+
+`src/wallpaper/draw.ts` draws each wallpaper with [React Native Skia](https://shopify.github.io/react-native-skia/)
+onto a CPU-backed surface at the phone's exact screen resolution, then saves it as a JPEG.
+Because it only uses the Skia API object it is given, the same code runs on the phone, in
+background tasks (no screen needed) and in Node through CanvasKit, which is how the tests and
+`npm run render:samples` check layout and contrast.
+
+- **Styles** (`src/wallpaper/styles.ts`): three soft gradients, two solid colours with a gentle
+  glow, and a paper texture, each with fine grain so gradients don't band.
+- **Text**: a serif quote with balanced line lengths, sized to its length, and the author in small
+  tracked capitals under a short rule. The block stays between 44% and 80% of the screen height
+  (36–74% with the Middle position).
+- **Readability**: tests render every style and check that quote text keeps at least 4.5:1
+  contrast against the pixels behind it, and author text at least 3.5:1.
 
 ## Quote library
 
