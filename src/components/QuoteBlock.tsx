@@ -15,8 +15,16 @@ interface QuoteBlockProps {
 /** A quote set in the serif face with its author and source underneath. */
 export function QuoteBlock({ quote, size = 'large', showCategory = true }: QuoteBlockProps) {
   const large = size === 'large';
+  const author = quote.author.trim();
+  const category = getCategory(quote.category).label;
   return (
-    <View style={styles.root} accessible accessibilityLabel={`${quote.text} — ${quote.author}`}>
+    <View
+      style={styles.root}
+      accessible
+      accessibilityLabel={[quote.text, author && `— ${author}`, showCategory && category]
+        .filter(Boolean)
+        .join('. ')}
+    >
       <AppText
         variant="quote"
         style={large ? styles.large : styles.medium}
@@ -25,17 +33,19 @@ export function QuoteBlock({ quote, size = 'large', showCategory = true }: Quote
         {quote.text}
       </AppText>
       <View style={styles.meta}>
-        <AppText variant="callout" tone="secondary">
-          — {quote.author}
-          {quote.source ? (
-            <AppText variant="callout" tone="tertiary" style={styles.source}>
-              {`, ${quote.source}`}
-            </AppText>
-          ) : null}
-        </AppText>
+        {author ? (
+          <AppText variant="callout" tone="secondary">
+            — {author}
+            {quote.source ? (
+              <AppText variant="callout" tone="tertiary" style={styles.source}>
+                {`, ${quote.source}`}
+              </AppText>
+            ) : null}
+          </AppText>
+        ) : null}
         {showCategory ? (
           <AppText variant="label" tone="accent" uppercase>
-            {getCategory(quote.category).label}
+            {quote.isCustom ? `${category} · Your quote` : category}
           </AppText>
         ) : null}
       </View>

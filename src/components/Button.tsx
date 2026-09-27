@@ -18,6 +18,8 @@ interface ButtonProps {
   style?: ViewStyle;
   accessibilityHint?: string;
   size?: 'regular' | 'small';
+  /** Tints secondary and ghost buttons with the danger colour. */
+  destructive?: boolean;
 }
 
 export function Button({
@@ -30,6 +32,7 @@ export function Button({
   style,
   accessibilityHint,
   size = 'regular',
+  destructive,
 }: ButtonProps) {
   const { colors } = useAppTheme();
   const background =
@@ -38,7 +41,8 @@ export function Button({
       : variant === 'secondary'
         ? colors.surface
         : 'transparent';
-  const foreground = variant === 'primary' ? colors.onAccent : colors.accent;
+  const foreground =
+    variant === 'primary' ? colors.onAccent : destructive ? colors.danger : colors.accent;
   const inactive = disabled || loading;
 
   return (

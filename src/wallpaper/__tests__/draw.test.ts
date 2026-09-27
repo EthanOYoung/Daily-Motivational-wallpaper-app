@@ -82,6 +82,22 @@ describe('wallpaper text layout', () => {
     }
   });
 
+  it('leaves out the author line when there is no author', () => {
+    const spec = { text: 'Keep going.', styleId: 'dawn', width: 1179, height: 2556 };
+    const withAuthor = layoutWallpaperText(Skia, fonts, { ...spec, author: 'Me' });
+    const without = layoutWallpaperText(Skia, fonts, { ...spec, author: '  ' });
+    expect(without.block.height).toBeLessThan(withAuthor.block.height);
+    const surface = Skia.Surface.Make(393, 852)!;
+    expect(() =>
+      drawWallpaper(Skia, surface.getCanvas(), fonts, {
+        ...spec,
+        author: '',
+        width: 393,
+        height: 852,
+      })
+    ).not.toThrow();
+  });
+
   it('uses bigger type for shorter quotes', () => {
     const size = (text: string) =>
       layoutWallpaperText(Skia, fonts, {

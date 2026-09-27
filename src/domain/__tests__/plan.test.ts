@@ -138,9 +138,56 @@ describe('assignQuoteToDay', () => {
     const later = plan.days[3]!;
     const next = assignQuoteToDay(plan, TODAY, later.quote);
     expect(findDay(next, TODAY)!.quote.id).toBe(later.quote.id);
+    expect(findDay(next, TODAY)!.pinned).toBe(true);
     expect(findDay(next, later.date)).toBeUndefined();
     const refilled = ensurePlan(next, context());
     expect(findDay(refilled, later.date)!.quote.id).not.toBe(later.quote.id);
+  });
+});
+
+describe('pinned days', () => {
+  const custom: Quote = {
+    id: 'custom-1',
+    text: 'My own words',
+    author: '',
+    category: 'ambition',
+    isCustom: true,
+  };
+  const catalog = [...buildQuotePool(['gratitude', 'happiness', 'ambition']), custom];
+  const pinnedPlan = () =>
+    assignQuoteToDay(ensurePlan(EMPTY_PLAN, context({ catalog })), TODAY, custom);
+
+  it('keeps a pinned quote even though its category is not selected', () => {
+    const next = ensurePlan(pinnedPlan(), context({ catalog }));
+    expect(findDay(next, TODAY)!.quote.id).toBe(custom.id);
+    expect(
+      next.days.filter((d) => d.date > TODAY).every((d) => d.quote.category !== 'ambition')
+    ).toBe(true);
+  });
+
+  it('refreshes the pinned quote when it is edited', () => {
+    const edited = { ...custom, text: 'Better words' };
+    const next = ensurePlan(pinnedPlan(), context({ catalog: [...catalog.slice(0, -1), edited] }));
+    expect(findDay(next, TODAY)!.quote.text).toBe('Better words');
+  });
+
+  it('re-plans the day when the pinned quote is deleted', () => {
+    const next = ensurePlan(pinnedPlan(), context({ catalog: catalog.slice(0, -1) }));
+    const today = findDay(next, TODAY)!;
+    expect(today.quote.id).not.toBe(custom.id);
+    expect(['gratitude', 'happiness']).toContain(today.quote.category);
+  });
+
+  it('keeps the snapshot when no catalog is given', () => {
+    const next = ensurePlan(pinnedPlan(), context());
+    expect(findDay(next, TODAY)!.quote.id).toBe(custom.id);
+  });
+
+  it('is unpinned by regenerating', () => {
+    const next = regenerateDay(pinnedPlan(), TODAY, context({ catalog }));
+    const today = findDay(next, TODAY)!;
+    expect(today.quote.id).not.toBe(custom.id);
+    expect(today.pinned).toBeUndefined();
   });
 });
 

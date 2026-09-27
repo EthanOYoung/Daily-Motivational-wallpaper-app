@@ -7,6 +7,8 @@ export interface DayEntry {
   date: DateKey;
   quote: Quote;
   styleId: string;
+  /** Chosen by the user (e.g. a favourite for today); kept even if its category is turned off. */
+  pinned?: boolean;
 }
 
 export interface PlanState {
@@ -26,6 +28,8 @@ export interface PlanContext {
   random?: RandomFn;
   /** Past days kept for the history list. */
   historyLimit?: number;
+  /** Every known quote, used to refresh pinned days (whose quote may be outside the pool). */
+  catalog?: readonly Quote[];
 }
 
 export const EMPTY_PLAN: PlanState = { used: [], days: [] };
@@ -54,8 +58,9 @@ export function findDay(state: PlanState, date: DateKey): DayEntry | undefined {
  * Makes sure `today` and the following days up to `horizon` each have a quote and style.
  *
  * Planned days whose quote left the pool (category deselected, custom quote deleted) are
- * re-planned; upcoming ones give their quote back to the cycle since nobody saw it yet.
- * Quote snapshots are refreshed from the pool so edits to custom quotes show up.
+ * re-planned; upcoming ones give their quote back to the cycle since nobody saw it yet. Pinned
+ * days are kept as chosen unless their quote was deleted. Quote snapshots are refreshed so edits
+ * to custom quotes show up.
  */
 export function ensurePlan(state: PlanState, ctx: PlanContext): PlanState {
   const { today, pool, styleIds, random, historyLimit = DEFAULT_HISTORY_LIMIT } = ctx;
@@ -69,12 +74,18 @@ export function ensurePlan(state: PlanState, ctx: PlanContext): PlanState {
   }
 
   const poolById = new Map(pool.map((q) => [q.id, q]));
+  const catalogById = new Map((ctx.catalog ?? []).map((q) => [q.id, q]));
   let used = new Set(state.used);
   const kept = new Map<DateKey, DayEntry>();
 
   for (const entry of state.days) {
     if (entry.date < today) continue;
-    const fresh = poolById.get(entry.quote.id);
+    // Pinned quotes may sit outside the pool; one missing from the catalog was deleted.
+    const fresh = entry.pinned
+      ? ctx.catalog
+        ? catalogById.get(entry.quote.id)
+        : entry.quote
+      : poolById.get(entry.quote.id);
     if (entry.date > lastDay || !fresh) {
       // Unseen future quotes return to the cycle; today's quote counts as shown.
       if (entry.date > today) used.delete(entry.quote.id);
@@ -82,7 +93,7 @@ export function ensurePlan(state: PlanState, ctx: PlanContext): PlanState {
     }
     if (!fresh) continue;
     kept.set(entry.date, {
-      date: entry.date,
+      ...entry,
       quote: fresh,
       styleId: styleIds.includes(entry.styleId)
         ? entry.styleId
@@ -134,7 +145,7 @@ export function regenerateDay(state: PlanState, date: DateKey, ctx: PlanContext)
 }
 
 /**
- * Puts a specific quote on `date`, e.g. when choosing a favourite for today. Later days that had
+ * Pins a specific quote to `date`, e.g. when choosing a favourite for today. Later days that had
  * the same quote planned are dropped so the next `ensurePlan` gives them a different one.
  */
 export function assignQuoteToDay(state: PlanState, date: DateKey, quote: Quote): PlanState {
@@ -142,6 +153,6 @@ export function assignQuoteToDay(state: PlanState, date: DateKey, quote: Quote):
   used.add(quote.id);
   const days = state.days
     .filter((d) => d.date <= date || d.quote.id !== quote.id)
-    .map((d) => (d.date === date ? { ...d, quote } : d));
+    .map((d) => (d.date === date ? { ...d, quote, pinned: true } : d));
   return { used: [...used], days };
 }

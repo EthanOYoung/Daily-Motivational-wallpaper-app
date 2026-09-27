@@ -129,8 +129,8 @@ function balanceWidth(paragraph: SkParagraph, maxWidth: number): number {
 interface Measured {
   layout: TextLayout;
   quote: SkParagraph;
-  author: SkParagraph;
-  authorSize: number;
+  /** Null when the quote has no author (custom quotes can leave it blank). */
+  author: SkParagraph | null;
   gap: number;
 }
 
@@ -151,10 +151,12 @@ function measure(
     const quote = buildQuote(Skia, fonts, style, spec.text, fontSize);
     const quoteWidth = balanceWidth(quote, columnWidth);
     const authorSize = Math.min(W * 0.03, Math.max(W * 0.024, fontSize * 0.38));
-    const author = buildAuthor(Skia, fonts, style, spec.author, authorSize);
-    author.layout(columnWidth);
+    const author = spec.author.trim()
+      ? buildAuthor(Skia, fonts, style, spec.author.trim(), authorSize)
+      : null;
+    author?.layout(columnWidth);
     const gap = fontSize * 0.85;
-    const height = quote.getHeight() + gap * 2 + author.getHeight();
+    const height = quote.getHeight() + (author ? gap * 2 + author.getHeight() : 0);
 
     if (height <= zone.bottom - zone.top || fontSize <= minFont) {
       const centered = zoneSpec.center * H - height / 2;
@@ -168,7 +170,6 @@ function measure(
         },
         quote,
         author,
-        authorSize,
         gap,
       };
     }
@@ -341,6 +342,7 @@ export function drawWallpaper(
   const { layout, quote, author, gap } = measure(Skia, fonts, spec, style);
   const { block } = layout;
   quote.paint(canvas, block.x, block.y);
+  if (!author) return layout;
 
   const ruleY = block.y + quote.getHeight() + gap;
   const ruleWidth = W * 0.07;

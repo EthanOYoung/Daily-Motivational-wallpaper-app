@@ -56,6 +56,15 @@ export default function RootLayout() {
 
   if (!ready) return null;
 
+  const headerOptions = {
+    headerShown: true,
+    headerBackTitle: 'Back',
+    headerTintColor: colors.accent,
+    headerTitleStyle: { color: colors.text },
+    headerStyle: { backgroundColor: colors.background },
+    headerShadowVisible: false,
+  };
+
   return (
     <ThemeProvider value={navigationTheme}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
@@ -64,15 +73,11 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="shortcut-guide"
-          options={{
-            headerShown: true,
-            title: 'Automatic wallpaper',
-            headerBackTitle: 'Back',
-            headerTintColor: colors.accent,
-            headerTitleStyle: { color: colors.text },
-            headerStyle: { backgroundColor: colors.background },
-            headerShadowVisible: false,
-          }}
+          options={{ ...headerOptions, title: 'Automatic wallpaper' }}
+        />
+        <Stack.Screen
+          name="quote-editor"
+          options={{ ...headerOptions, title: 'New quote', presentation: 'modal' }}
         />
       </Stack>
       <ToastHost />

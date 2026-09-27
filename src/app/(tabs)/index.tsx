@@ -21,9 +21,10 @@ import { describeAndroidStatus, describeIosStatus } from '@/scheduling/statusTex
 import { PermissionDeniedError, saveWallpaperToPhotos, shareWallpaper } from '@/services/share';
 import { useClockStore } from '@/store/clock';
 import { selectDay, useDailyStore } from '@/store/daily';
+import { selectIsFavourite, useLibraryStore } from '@/store/library';
 import { useSchedulingStore } from '@/store/scheduling';
 import { useSettingsStore } from '@/store/settings';
-import { spacing } from '@/theme';
+import { spacing, useAppTheme } from '@/theme';
 import { getScreenPixelSize } from '@/wallpaper/device';
 
 type Busy = 'save' | 'share' | 'set' | null;
@@ -33,6 +34,9 @@ export default function TodayScreen() {
   const entry = useDailyStore(selectDay(today));
   const regenerate = useDailyStore((s) => s.regenerate);
   const wallpaper = useDayWallpaper(entry);
+  const isFavourite = useLibraryStore(selectIsFavourite(entry?.quote.id));
+  const toggleFavourite = useLibraryStore((s) => s.toggleFavourite);
+  const { colors } = useAppTheme();
   const [busy, setBusy] = useState<Busy>(null);
   const settings = useSettingsStore(
     useShallow((s) => ({
@@ -65,6 +69,13 @@ export default function TodayScreen() {
   const onRegenerate = () => {
     Haptics.selectionAsync().catch(() => {});
     regenerate(today);
+  };
+
+  const onFavourite = () => {
+    if (!entry) return;
+    const added = toggleFavourite(entry.quote);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    showToast(added ? 'Added to favourites' : 'Removed from favourites');
   };
 
   const onSave = () =>
@@ -121,15 +132,25 @@ export default function TodayScreen() {
         error={wallpaper.error}
         width={previewWidth}
         aspectRatio={aspectRatio}
-        accessibilityLabel={`Today's wallpaper: ${entry.quote.text} — ${entry.quote.author}`}
+        accessibilityLabel={`Today's wallpaper: ${entry.quote.text}${
+          entry.quote.author ? ` — ${entry.quote.author}` : ''
+        }`}
       />
       <AppText variant="caption" tone="tertiary" style={styles.caption}>
         {getCategory(entry.quote.category).label} · {getStyleInfo(entry.styleId).name}
+        {entry.quote.isCustom ? ' · Your quote' : ''}
         {entry.quote.source ? ` · ${entry.quote.source}` : ''}
       </AppText>
 
       <View style={styles.actions}>
         <ActionButton label="New quote" icon="refresh" onPress={onRegenerate} />
+        <ActionButton
+          label="Favourite"
+          icon={isFavourite ? 'heart' : 'heart-outline'}
+          onPress={onFavourite}
+          active={isFavourite}
+          activeColor={colors.heart}
+        />
         <ActionButton
           label="Save"
           icon="download-outline"
@@ -144,15 +165,6 @@ export default function TodayScreen() {
           disabled={!ready}
           busy={busy === 'share'}
         />
-        {canSetWallpaper ? (
-          <ActionButton
-            label="Set now"
-            icon="phone-portrait-outline"
-            onPress={onSetNow}
-            disabled={!ready}
-            busy={busy === 'set'}
-          />
-        ) : null}
       </View>
 
       {Platform.OS === 'android' ? (
@@ -167,7 +179,19 @@ export default function TodayScreen() {
             dailyTime: settings.dailyTime,
             target: settings.target,
           })}
-        />
+        >
+          {canSetWallpaper ? (
+            <Button
+              size="small"
+              variant="secondary"
+              label="Set it now"
+              icon="phone-portrait-outline"
+              onPress={onSetNow}
+              disabled={!ready}
+              loading={busy === 'set'}
+            />
+          ) : null}
+        </WallpaperStatus>
       ) : null}
 
       {Platform.OS === 'ios' ? (
@@ -193,7 +217,7 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: spacing.lg,
+    gap: spacing.md,
     marginTop: spacing.xl,
   },
 });

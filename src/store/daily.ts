@@ -11,14 +11,15 @@ import {
   type PlanContext,
   type PlanState,
 } from '@/domain/plan';
-import { buildQuotePool } from '@/domain/quotes';
+import { BUNDLED_QUOTES, buildQuotePool } from '@/domain/quotes';
 import type { DateKey, Quote } from '@/domain/types';
 
+import { useLibraryStore } from './library';
 import { useSettingsStore } from './settings';
 import { deviceStorage } from './storage';
 
 /**
- * Days planned (and, from stage 3, pre-rendered) ahead of time. iOS keeps a longer runway
+ * Days planned and pre-rendered ahead of time. iOS keeps a longer runway
  * because iOS rarely wakes the app in the background.
  */
 export const PLAN_HORIZON_DAYS = Platform.OS === 'ios' ? 14 : 7;
@@ -36,11 +37,13 @@ export type DailyState = PlanState & DailyActions;
 
 function planContext(today: DateKey): PlanContext {
   const { selectedCategories, enabledStyles } = useSettingsStore.getState();
+  const { customQuotes } = useLibraryStore.getState();
   return {
     today,
     horizon: PLAN_HORIZON_DAYS,
-    pool: buildQuotePool(selectedCategories),
+    pool: buildQuotePool(selectedCategories, customQuotes),
     styleIds: enabledStyles,
+    catalog: [...BUNDLED_QUOTES, ...customQuotes],
   };
 }
 
@@ -63,9 +66,10 @@ export const useDailyStore = create<DailyState>()(
       },
 
       assign: (date, quote) => {
-        const today = toDateKey(new Date());
-        const assigned = assignQuoteToDay(planOf(get()), date, quote);
-        set(ensurePlan(assigned, planContext(today)));
+        const context = planContext(toDateKey(new Date()));
+        // Plan first so the day exists, then refill any later day that had the same quote.
+        const planned = ensurePlan(planOf(get()), context);
+        set(ensurePlan(assignQuoteToDay(planned, date, quote), context));
       },
     }),
     {

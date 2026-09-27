@@ -79,8 +79,8 @@ The first EAS build asks you to log in (`npx eas-cli@latest login`) and to link 
 3. Lock the phone and wait: at the chosen time the lock screen and home screen change to today's
    wallpaper. **Today** then shows "On your lock and home screens since …".
 4. Tap **New quote**: a moment later the wallpaper on your phone updates too (after today's change
-   time, the app keeps the screen in sync with today's quote). **Set now** applies it immediately
-   at any time.
+   time, the app keeps the screen in sync with today's quote). **Set it now**, in the card under
+   the preview, applies it immediately at any time.
 5. Restart the phone and repeat step 1: it still changes, because the alarm is re-armed after a
    reboot, an app update, or a time zone change.
 6. Optional, with a USB cable: `adb shell dumpsys alarm | grep -A3 dailywallpaper` shows the next
@@ -102,11 +102,42 @@ The first EAS build asks you to log in (`npx eas-cli@latest login`) and to link 
    runs the background refresh (usually overnight while charging), so on days when neither
    happens the automation shows the previous day's quote.
 
+### Stage 4 — favourites and your own quotes
+
+This stage only changes JavaScript, so keep using the development build from Stage 3: run
+`npx expo start` and open the project in it. No rebuild needed.
+
+1. On **Today**, tap the **heart**. It turns red and "Added to favourites" appears. Open the
+   **Favourites** tab: the quote is there with its author and category.
+2. Go back, tap **New quote** and favourite that one too. Favourites lists the newest first.
+   **Share** sends the quote as text; **Remove** takes it off the list. Tapping the heart again on
+   Today does the same.
+3. In **Favourites**, tap **Use today** on the older quote. The app switches to Today and today's
+   wallpaper changes to that quote. On Android, if today's change time has passed, the phone's
+   wallpaper updates too; on iPhone, the next Shortcuts run picks it up.
+4. Open **My Quotes** and tap **Add a quote**. Write a quote, add an author if you like (it's
+   optional), pick a category and tap **Add quote**. Saving with no text or no category shows what's
+   missing.
+5. Tap **+** to add another, this time with **Show it on today's wallpaper** turned on. Today
+   shows it straight away, with "Your quote" under the preview. Quotes without an author are drawn
+   without the author line.
+6. Tap **Edit** on one of your quotes, change the words and **Save changes**. The list, your
+   favourites and (if it's today's quote) the wallpaper update. **Delete quote** removes it from the
+   rotation and your favourites; if it was today's quote, today gets a new one.
+7. In the editor, pick a category that's turned off in **Settings**. A note explains the quote
+   won't come up in the rotation and offers to turn that category back on. A quote you put on
+   today's wallpaper stays there even if its category is off.
+8. Close the app completely and reopen it: favourites and your quotes are still there.
+
+Your quotes join the no-repeat rotation of their category, so each comes up once per cycle like
+the bundled ones.
+
 ## Development
 
 ```sh
-npm test                # unit tests: quote library, no-repeat rotation, planning, dates, and
-                        # the wallpaper renderer (layout and contrast, run on CanvasKit)
+npm test                # unit tests: quote library, no-repeat rotation, planning, dates,
+                        # favourites and your own quotes, and the wallpaper renderer (layout
+                        # and contrast, run on CanvasKit)
 npm run typecheck       # TypeScript (app and scripts)
 npm run lint            # ESLint
 npm run render:samples  # sample wallpapers for every style in samples/
@@ -115,13 +146,15 @@ npm run render:samples  # sample wallpapers for every style in samples/
 ### Project structure
 
 ```
-src/app/            Expo Router screens (tabs: Today, Settings)
+src/app/            Expo Router screens: tabs (Today, Favourites, My Quotes, Settings), the quote
+                    editor and the iPhone automation guide
 src/data/           quotes.json — the bundled quote library
 src/domain/         Pure TypeScript logic: categories, quote pool, no-repeat picker, daily plan
 src/wallpaper/      Skia renderer: six styles, text layout, device fonts, image files
-src/store/          Zustand stores persisted to AsyncStorage
+src/store/          Zustand stores persisted to AsyncStorage (settings, daily plan, favourites
+                    and your own quotes, rendered files, scheduling state)
 src/scheduling/     Pre-rendering upcoming days, background task, Android and iOS hand-off
-src/services/       Saving to Photos and sharing
+src/services/       Saving to Photos, sharing, and quote actions (use today, share as text)
 modules/daily-wallpaper/  Local Expo module (Kotlin): sets the Android wallpaper, daily alarm, reboot handling
 src/components/     Shared UI (text, buttons, cards, category picker, wallpaper preview)
 src/theme/          Colours for light/dark mode, spacing and typography
@@ -165,5 +198,9 @@ background tasks (no screen needed) and in Node through CanvasKit, which is how 
 `author`, `category` and, when known, `source`. They come mainly from public-domain works (for
 example the George Long translation of Marcus Aurelius, Richard Gummere's Seneca and Max Müller's
 Dhammapada), traditional proverbs and US presidential addresses. Every quote is credited to its
-author, with the source work where known. A unit test checks that each category has at least 30 quotes, that there are no
-duplicates, and that every quote is short enough to fit on a wallpaper.
+author, with the source work where known. A unit test checks that each category has at least 30
+quotes, that there are no duplicates, and that every quote is short enough to fit on a wallpaper.
+
+Quotes you add in **My Quotes** are stored on the device and join the rotation of the category you
+pick. They can be up to 220 characters (a little longer than the longest bundled quote); the
+renderer tests check that text of that length still fits on every screen size.

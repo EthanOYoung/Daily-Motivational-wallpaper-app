@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 import { useDailyStore } from './daily';
+import { useLibraryStore } from './library';
 import { useRenderStore } from './renders';
 import { useSchedulingStore } from './scheduling';
 import { useSettingsStore } from './settings';
@@ -15,6 +16,7 @@ const persisted: PersistApi[] = [
   useDailyStore.persist,
   useRenderStore.persist,
   useSchedulingStore.persist,
+  useLibraryStore.persist,
 ];
 
 /** Registers another persisted store so startup waits for it too. */
