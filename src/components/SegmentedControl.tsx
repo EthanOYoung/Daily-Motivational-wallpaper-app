@@ -43,7 +43,11 @@ export function SegmentedControl<T extends string>({
               selected && [styles.selected, { backgroundColor: colors.surface }],
             ]}
           >
-            <AppText variant="callout" tone={selected ? 'primary' : 'secondary'}>
+            <AppText
+              variant="callout"
+              tone={selected ? 'primary' : 'secondary'}
+              style={styles.label}
+            >
               {option.label}
             </AppText>
           </Pressable>
@@ -63,6 +67,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm + 1,
     minHeight: 38,
   },
+  label: { textAlign: 'center' },
   selected: {
     shadowColor: '#000',
     shadowOpacity: 0.08,

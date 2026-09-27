@@ -1,29 +1,49 @@
 import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useShallow } from 'zustand/react/shallow';
 
 import { AppText } from '@/components/AppText';
-import { ActionButton } from '@/components/Button';
+import { ActionButton, Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
 import { showToast } from '@/components/Toast';
 import { WallpaperPreview } from '@/components/WallpaperPreview';
+import { WallpaperStatus } from '@/components/WallpaperStatus';
 import { getCategory } from '@/domain/categories';
 import { formatDateKey } from '@/domain/dates';
 import { getStyleInfo } from '@/domain/styles';
+import { useAndroidStatus } from '@/hooks/useAndroidStatus';
 import { useDayWallpaper } from '@/hooks/useDayWallpaper';
+import { canSetWallpaper, setWallpaperNow } from '@/scheduling/android';
+import { describeAndroidStatus, describeIosStatus } from '@/scheduling/statusText';
 import { PermissionDeniedError, saveWallpaperToPhotos, shareWallpaper } from '@/services/share';
 import { useClockStore } from '@/store/clock';
 import { selectDay, useDailyStore } from '@/store/daily';
+import { useSchedulingStore } from '@/store/scheduling';
+import { useSettingsStore } from '@/store/settings';
 import { spacing } from '@/theme';
 import { getScreenPixelSize } from '@/wallpaper/device';
+
+type Busy = 'save' | 'share' | 'set' | null;
 
 export default function TodayScreen() {
   const today = useClockStore((s) => s.today);
   const entry = useDailyStore(selectDay(today));
   const regenerate = useDailyStore((s) => s.regenerate);
   const wallpaper = useDayWallpaper(entry);
-  const [busy, setBusy] = useState<'save' | 'share' | null>(null);
+  const [busy, setBusy] = useState<Busy>(null);
+  const settings = useSettingsStore(
+    useShallow((s) => ({
+      autoApply: s.autoApply,
+      dailyTime: s.dailyTime,
+      target: s.wallpaperTarget,
+      saveToAlbum: s.saveToAlbum,
+    }))
+  );
+  const savedToAlbumToday = useSchedulingStore((s) => !!s.albumSaves[today]);
+  const { status: androidStatus, refresh: refreshAndroid } = useAndroidStatus();
 
   const window = useWindowDimensions();
   const screen = getScreenPixelSize();
@@ -33,40 +53,55 @@ export default function TodayScreen() {
   );
   const ready = !!wallpaper.uri && !wallpaper.loading;
 
+  const run = async (kind: Exclude<Busy, null>, action: () => Promise<void>) => {
+    setBusy(kind);
+    try {
+      await action();
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const onRegenerate = () => {
     Haptics.selectionAsync().catch(() => {});
     regenerate(today);
   };
 
-  const onSave = async () => {
-    if (!wallpaper.uri) return;
-    setBusy('save');
-    try {
-      await saveWallpaperToPhotos(wallpaper.uri, today);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      showToast('Saved to Photos');
-    } catch (error) {
-      showToast(
-        error instanceof PermissionDeniedError
-          ? 'Allow photo access in Settings to save wallpapers'
-          : "Couldn't save the wallpaper"
-      );
-    } finally {
-      setBusy(null);
-    }
-  };
+  const onSave = () =>
+    run('save', async () => {
+      try {
+        await saveWallpaperToPhotos(wallpaper.uri!, today);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        showToast('Saved to Photos');
+      } catch (error) {
+        showToast(
+          error instanceof PermissionDeniedError
+            ? 'Allow photo access in Settings to save wallpapers'
+            : "Couldn't save the wallpaper"
+        );
+      }
+    });
 
-  const onShare = async () => {
-    if (!wallpaper.uri) return;
-    setBusy('share');
-    try {
-      await shareWallpaper(wallpaper.uri, today);
-    } catch {
-      showToast("Couldn't open the share sheet");
-    } finally {
-      setBusy(null);
-    }
-  };
+  const onShare = () =>
+    run('share', async () => {
+      try {
+        await shareWallpaper(wallpaper.uri!, today);
+      } catch {
+        showToast("Couldn't open the share sheet");
+      }
+    });
+
+  const onSetNow = () =>
+    run('set', async () => {
+      try {
+        await setWallpaperNow(wallpaper.uri!, today);
+        refreshAndroid();
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        showToast('Wallpaper set');
+      } catch (error) {
+        showToast(error instanceof Error ? error.message : "Couldn't set the wallpaper");
+      }
+    });
 
   if (!entry) {
     return (
@@ -109,7 +144,46 @@ export default function TodayScreen() {
           disabled={!ready}
           busy={busy === 'share'}
         />
+        {canSetWallpaper ? (
+          <ActionButton
+            label="Set now"
+            icon="phone-portrait-outline"
+            onPress={onSetNow}
+            disabled={!ready}
+            busy={busy === 'set'}
+          />
+        ) : null}
       </View>
+
+      {Platform.OS === 'android' ? (
+        <WallpaperStatus
+          icon={
+            androidStatus?.lastAppliedDate === today ? 'checkmark-circle-outline' : 'time-outline'
+          }
+          text={describeAndroidStatus(androidStatus, {
+            today,
+            now: new Date(),
+            autoApply: settings.autoApply,
+            dailyTime: settings.dailyTime,
+            target: settings.target,
+          })}
+        />
+      ) : null}
+
+      {Platform.OS === 'ios' ? (
+        <WallpaperStatus
+          icon="flash-outline"
+          text={describeIosStatus({ saveToAlbum: settings.saveToAlbum, savedToAlbumToday })}
+        >
+          <Button
+            size="small"
+            variant="secondary"
+            label="How to set it up"
+            icon="book-outline"
+            onPress={() => router.push('/shortcut-guide')}
+          />
+        </WallpaperStatus>
+      ) : null}
     </Screen>
   );
 }
@@ -119,7 +193,7 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: spacing.xl,
+    gap: spacing.lg,
     marginTop: spacing.xl,
   },
 });

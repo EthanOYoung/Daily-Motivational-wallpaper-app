@@ -17,6 +17,7 @@ interface ButtonProps {
   loading?: boolean;
   style?: ViewStyle;
   accessibilityHint?: string;
+  size?: 'regular' | 'small';
 }
 
 export function Button({
@@ -28,6 +29,7 @@ export function Button({
   loading,
   style,
   accessibilityHint,
+  size = 'regular',
 }: ButtonProps) {
   const { colors } = useAppTheme();
   const background =
@@ -49,6 +51,7 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
+        size === 'small' && styles.small,
         {
           backgroundColor: background,
           borderColor: variant === 'secondary' ? colors.border : 'transparent',
@@ -63,7 +66,7 @@ export function Button({
         ) : icon ? (
           <Ionicons name={icon} size={18} color={foreground} />
         ) : null}
-        <AppText variant="heading" style={{ color: foreground }}>
+        <AppText variant={size === 'small' ? 'callout' : 'heading'} style={{ color: foreground }}>
           {label}
         </AppText>
       </View>
@@ -130,6 +133,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  small: { minHeight: 38, paddingHorizontal: spacing.lg },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   action: { alignItems: 'center', gap: spacing.xs, minWidth: 64 },
   actionCircle: {

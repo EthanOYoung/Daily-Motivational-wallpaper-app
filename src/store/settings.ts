@@ -5,6 +5,8 @@ import { STYLE_IDS, type StyleId } from '@/domain/styles';
 import { CATEGORY_IDS, type CategoryId, type TimeOfDay } from '@/domain/types';
 import type { TextPosition } from '@/wallpaper/draw';
 
+import type { WallpaperTarget } from '../../modules/daily-wallpaper';
+
 import { deviceStorage } from './storage';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
@@ -17,6 +19,12 @@ interface SettingsValues {
   enabledStyles: StyleId[];
   /** Where the quote sits on the wallpaper. */
   textPosition: TextPosition;
+  /** Android: set the wallpaper automatically at `dailyTime`. */
+  autoApply: boolean;
+  /** Android: which screens get the wallpaper. */
+  wallpaperTarget: WallpaperTarget;
+  /** iOS: also save each day's wallpaper to the "Daily Quote Wallpaper" album. */
+  saveToAlbum: boolean;
 }
 
 interface SettingsActions {
@@ -25,6 +33,9 @@ interface SettingsActions {
   setThemePreference: (preference: ThemePreference) => void;
   setDailyTime: (time: TimeOfDay) => void;
   setTextPosition: (position: TextPosition) => void;
+  setAutoApply: (enabled: boolean) => void;
+  setWallpaperTarget: (target: WallpaperTarget) => void;
+  setSaveToAlbum: (enabled: boolean) => void;
 }
 
 export type SettingsState = SettingsValues & SettingsActions;
@@ -35,6 +46,9 @@ export const DEFAULT_SETTINGS: SettingsValues = {
   dailyTime: { hour: 6, minute: 0 },
   enabledStyles: [...STYLE_IDS],
   textPosition: 'lower',
+  autoApply: true,
+  wallpaperTarget: 'both',
+  saveToAlbum: false,
 };
 
 /** Keeps category order stable (library order) no matter how they were toggled. */
@@ -70,18 +84,25 @@ export const useSettingsStore = create<SettingsState>()(
       setDailyTime: (dailyTime) => set({ dailyTime }),
 
       setTextPosition: (textPosition) => set({ textPosition }),
+
+      setAutoApply: (autoApply) => set({ autoApply }),
+
+      setWallpaperTarget: (wallpaperTarget) => set({ wallpaperTarget }),
+
+      setSaveToAlbum: (saveToAlbum) => set({ saveToAlbum }),
     }),
     {
       name: 'settings',
       version: 1,
       storage: deviceStorage,
-      partialize: ({
-        selectedCategories,
-        themePreference,
-        dailyTime,
-        enabledStyles,
-        textPosition,
-      }) => ({ selectedCategories, themePreference, dailyTime, enabledStyles, textPosition }),
+      // Persist every value, none of the actions.
+      partialize: (state): SettingsValues => {
+        const values = {} as Record<string, unknown>;
+        for (const key of Object.keys(DEFAULT_SETTINGS)) {
+          values[key] = state[key as keyof SettingsValues];
+        }
+        return values as unknown as SettingsValues;
+      },
     }
   )
 );

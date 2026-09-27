@@ -8,6 +8,7 @@ import { useEffect, useMemo } from 'react';
 import { ToastHost } from '@/components/Toast';
 import { useDayTicker } from '@/hooks/useDayTicker';
 import { usePlanSync } from '@/hooks/usePlanSync';
+import { useWallpaperPipeline } from '@/hooks/useWallpaperPipeline';
 import { useStoresHydrated } from '@/store/hydration';
 import { useAppTheme } from '@/theme';
 
@@ -16,6 +17,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 function AppEffects() {
   useDayTicker();
   usePlanSync();
+  useWallpaperPipeline();
   return null;
 }
 
@@ -60,6 +62,18 @@ export default function RootLayout() {
       <AppEffects />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="shortcut-guide"
+          options={{
+            headerShown: true,
+            title: 'Automatic wallpaper',
+            headerBackTitle: 'Back',
+            headerTintColor: colors.accent,
+            headerTitleStyle: { color: colors.text },
+            headerStyle: { backgroundColor: colors.background },
+            headerShadowVisible: false,
+          }}
+        />
       </Stack>
       <ToastHost />
     </ThemeProvider>
