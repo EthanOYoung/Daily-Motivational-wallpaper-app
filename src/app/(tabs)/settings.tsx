@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Linking, Platform, StyleSheet } from 'react-native';
@@ -10,9 +11,11 @@ import { CategoryPicker } from '@/components/CategoryPicker';
 import { ListGroup, ListRow, SwitchRow } from '@/components/ListGroup';
 import { Screen } from '@/components/Screen';
 import { SegmentedControl } from '@/components/SegmentedControl';
+import { StylePicker } from '@/components/StylePicker';
 import { TimeRow } from '@/components/TimeRow';
 import { showToast } from '@/components/Toast';
 import { buildQuotePool, countQuotesByCategory } from '@/domain/quotes';
+import { STYLES, type StyleId } from '@/domain/styles';
 import { useAndroidStatus } from '@/hooks/useAndroidStatus';
 import { requestAlbumAccess } from '@/scheduling/album';
 import { canSetWallpaper, openExactAlarmSettings } from '@/scheduling/android';
@@ -65,6 +68,15 @@ export default function SettingsScreen() {
         : 'Allow photo access in Settings to use the album'
     );
     Linking.openSettings().catch(() => {});
+  };
+
+  const onToggleStyle = (id: StyleId) => {
+    if (settings.enabledStyles.length === 1 && settings.enabledStyles[0] === id) {
+      showToast('Keep at least one background on');
+      return;
+    }
+    Haptics.selectionAsync().catch(() => {});
+    settings.toggleStyle(id);
   };
 
   const needsExactAccess =
@@ -165,6 +177,19 @@ export default function SettingsScreen() {
         onChange={settings.setTextPosition}
       />
 
+      <SectionHeader
+        title="Backgrounds"
+        detail={`${settings.enabledStyles.length} of ${STYLES.length} in rotation`}
+      />
+      <AppText variant="caption" tone="secondary" style={styles.hint}>
+        Each day uses the next background that&apos;s on. Tap one to turn it off or on.
+      </AppText>
+      <StylePicker
+        enabled={settings.enabledStyles}
+        onToggle={onToggleStyle}
+        textPosition={settings.textPosition}
+      />
+
       <SectionHeader title="Appearance" />
       <SegmentedControl
         accessibilityLabel="Theme"
@@ -174,7 +199,14 @@ export default function SettingsScreen() {
       />
 
       <SectionHeader title="About" />
-      <Card>
+      <ListGroup>
+        <ListRow
+          label="Show the introduction again"
+          detail="Walks through themes, time and set-up"
+          onPress={() => settings.setOnboarded(false)}
+        />
+      </ListGroup>
+      <Card style={styles.about}>
         <AppText variant="callout" tone="secondary">
           Daily Quote Wallpaper {Constants.expoConfig?.version ?? ''}. Quotes come mainly from
           public-domain works, traditional proverbs and public speeches, each credited to its
@@ -189,4 +221,5 @@ const styles = StyleSheet.create({
   hint: { marginBottom: spacing.md, paddingHorizontal: spacing.xs },
   subhint: { marginTop: spacing.lg, marginBottom: spacing.sm, paddingHorizontal: spacing.xs },
   notice: { marginTop: spacing.lg, gap: spacing.md },
+  about: { marginTop: spacing.md },
 });

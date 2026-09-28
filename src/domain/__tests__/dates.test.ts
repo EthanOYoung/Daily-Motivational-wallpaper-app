@@ -3,6 +3,8 @@ import {
   atTime,
   dateRange,
   dayNumber,
+  describePastDate,
+  formatClockTime,
   fromDateKey,
   hasTimePassed,
   msUntilMidnight,
@@ -51,5 +53,29 @@ describe('scheduling helpers', () => {
 
   it('measures the time until midnight', () => {
     expect(msUntilMidnight(new Date(2026, 8, 28, 23, 0))).toBe(60 * 60 * 1000);
+  });
+});
+
+describe('formatClockTime', () => {
+  it('formats like a lock screen clock', () => {
+    const morning = new Date(2026, 8, 28, 6, 5);
+    const evening = new Date(2026, 8, 28, 18, 30);
+    const midnight = new Date(2026, 8, 28, 0, 0);
+    expect(formatClockTime(morning, false)).toBe('6:05');
+    expect(formatClockTime(evening, false)).toBe('6:30');
+    expect(formatClockTime(midnight, false)).toBe('12:00');
+    expect(formatClockTime(morning, true)).toBe('06:05');
+    expect(formatClockTime(evening, true)).toBe('18:30');
+    expect(formatClockTime(midnight, true)).toBe('00:00');
+  });
+});
+
+describe('describePastDate', () => {
+  it('names yesterday and spells out older days', () => {
+    expect(describePastDate('2026-09-27', '2026-09-28', 'en-US')).toBe('Yesterday');
+    expect(describePastDate('2026-09-26', '2026-09-28', 'en-US')).toBe('Saturday, September 26');
+    expect(describePastDate('2025-12-31', '2026-01-02', 'en-US')).toBe(
+      'Wednesday, December 31, 2025'
+    );
   });
 });

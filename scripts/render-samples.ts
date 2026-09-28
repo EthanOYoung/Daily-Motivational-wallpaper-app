@@ -6,24 +6,15 @@
  *   npm run render:samples -- --check # also fails if any text is hard to read
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import path from 'node:path';
-
-import type { SkTypefaceFontProvider } from '@shopify/react-native-skia';
 
 import { STYLE_IDS } from '../src/domain/styles';
 import { contrastRatio, parseHex, type RGB } from '../src/wallpaper/color';
-import {
-  IMAGE_FORMAT,
-  drawWallpaper,
-  type SkiaApi,
-  type TextPosition,
-} from '../src/wallpaper/draw';
-import { WALLPAPER_FONT_FILES } from '../src/wallpaper/fonts';
+import { IMAGE_FORMAT, drawWallpaper, type TextPosition } from '../src/wallpaper/draw';
 import { getWallpaperStyle } from '../src/wallpaper/styles';
 
-const require = createRequire(__filename);
-const root = path.resolve(__dirname, '..');
+import { loadFonts, loadSkia, root } from './skia-node';
+
 const outDir = path.join(root, 'samples');
 const check = process.argv.includes('--check');
 
@@ -47,26 +38,6 @@ const QUOTES = [
     author: 'John Lubbock',
   },
 ];
-
-async function loadSkia(): Promise<SkiaApi> {
-  const ckDir = path.join(root, 'node_modules/canvaskit-wasm/bin/full');
-  const CanvasKitInit = require(path.join(ckDir, 'canvaskit.js'));
-  const CanvasKit = await CanvasKitInit({ locateFile: (file: string) => path.join(ckDir, file) });
-  (globalThis as { CanvasKit?: unknown }).CanvasKit = CanvasKit;
-  const { JsiSkApi } = require('@shopify/react-native-skia/lib/commonjs/skia/web/JsiSkia.js');
-  return JsiSkApi(CanvasKit) as SkiaApi;
-}
-
-function loadFonts(Skia: SkiaApi): SkTypefaceFontProvider {
-  const provider = Skia.TypefaceFontProvider.Make();
-  for (const [family, file] of Object.entries(WALLPAPER_FONT_FILES)) {
-    const bytes = new Uint8Array(readFileSync(path.join(root, 'assets/fonts', file)));
-    const typeface = Skia.Typeface.MakeFreeTypeFaceFromData(Skia.Data.fromBytes(bytes));
-    if (!typeface) throw new Error(`Could not load ${file}`);
-    provider.registerFont(typeface, family);
-  }
-  return provider;
-}
 
 /** Average background colour behind the text block, read from a text-free render. */
 function averageColor(

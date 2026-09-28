@@ -25,6 +25,8 @@ interface SettingsValues {
   wallpaperTarget: WallpaperTarget;
   /** iOS: also save each day's wallpaper to the "Daily Quote Wallpaper" album. */
   saveToAlbum: boolean;
+  /** Set once the first-launch introduction has been completed. */
+  onboarded: boolean;
 }
 
 interface SettingsActions {
@@ -36,6 +38,9 @@ interface SettingsActions {
   setAutoApply: (enabled: boolean) => void;
   setWallpaperTarget: (target: WallpaperTarget) => void;
   setSaveToAlbum: (enabled: boolean) => void;
+  /** Turns a background style on or off; the last one can't be turned off. */
+  toggleStyle: (id: StyleId) => void;
+  setOnboarded: (onboarded: boolean) => void;
 }
 
 export type SettingsState = SettingsValues & SettingsActions;
@@ -49,6 +54,7 @@ export const DEFAULT_SETTINGS: SettingsValues = {
   autoApply: true,
   wallpaperTarget: 'both',
   saveToAlbum: false,
+  onboarded: false,
 };
 
 /** Keeps category order stable (library order) no matter how they were toggled. */
@@ -90,11 +96,30 @@ export const useSettingsStore = create<SettingsState>()(
       setWallpaperTarget: (wallpaperTarget) => set({ wallpaperTarget }),
 
       setSaveToAlbum: (saveToAlbum) => set({ saveToAlbum }),
+
+      toggleStyle: (id) =>
+        set((state) => {
+          const enabled = new Set(state.enabledStyles);
+          if (enabled.has(id)) {
+            if (enabled.size === 1) return state;
+            enabled.delete(id);
+          } else {
+            enabled.add(id);
+          }
+          return { enabledStyles: STYLE_IDS.filter((style) => enabled.has(style)) };
+        }),
+
+      setOnboarded: (onboarded) => set({ onboarded }),
     }),
     {
       name: 'settings',
-      version: 1,
+      version: 2,
       storage: deviceStorage,
+      migrate: (persisted, version) => {
+        const values = (persisted ?? {}) as Partial<SettingsValues>;
+        // Installs from before the introduction existed have already set the app up.
+        return version < 2 ? { ...values, onboarded: true } : values;
+      },
       // Persist every value, none of the actions.
       partialize: (state): SettingsValues => {
         const values = {} as Record<string, unknown>;

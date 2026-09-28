@@ -65,10 +65,27 @@ export function formatTimeOfDay(time: TimeOfDay, locale?: string): string {
   return date.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
 }
 
+/** Lock screen style clock: "6:05" on a 12-hour clock (no AM/PM), "06:05" on a 24-hour clock. */
+export function formatClockTime(date: Date, uses24Hour: boolean): string {
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const hours = uses24Hour
+    ? String(date.getHours()).padStart(2, '0')
+    : String(date.getHours() % 12 || 12);
+  return `${hours}:${minutes}`;
+}
+
 export function formatDateKey(
   key: DateKey,
   options: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric' },
   locale?: string
 ): string {
   return fromDateKey(key).toLocaleDateString(locale, options);
+}
+
+/** "Yesterday", else e.g. "Saturday, September 26" (with the year when it isn't this year). */
+export function describePastDate(date: DateKey, today: DateKey, locale?: string): string {
+  if (date === addDays(today, -1)) return 'Yesterday';
+  const options: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric' };
+  if (date.slice(0, 4) !== today.slice(0, 4)) options.year = 'numeric';
+  return formatDateKey(date, options, locale);
 }

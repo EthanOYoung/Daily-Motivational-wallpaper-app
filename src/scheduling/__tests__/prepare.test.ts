@@ -34,7 +34,7 @@ const today = () => toDateKey(new Date());
 
 beforeEach(() => {
   jest.clearAllMocks();
-  useSettingsStore.setState(DEFAULT_SETTINGS);
+  useSettingsStore.setState({ ...DEFAULT_SETTINGS, onboarded: true });
   useDailyStore.setState({ used: [], days: [] });
   useRenderStore.setState({ records: {} });
   useSchedulingStore.setState({ albumSaves: {}, lastPreparedAt: null });
@@ -79,6 +79,17 @@ describe('prepareWallpapers', () => {
     jest.mocked(getAlbumAccess).mockResolvedValueOnce('limited');
     await prepareWallpapers('launch');
     expect(saveToAlbum).not.toHaveBeenCalled();
+  });
+
+  it('leaves the album and schedule alone until the introduction is finished', async () => {
+    useSettingsStore.setState({ onboarded: false, saveToAlbum: true });
+    const result = await prepareWallpapers('launch');
+    expect(result.rendered).toBe(PLAN_HORIZON_DAYS);
+    expect(saveToAlbum).not.toHaveBeenCalled();
+
+    useSettingsStore.setState({ onboarded: true });
+    await prepareWallpapers('settings');
+    expect(saveToAlbum).toHaveBeenCalledTimes(1);
   });
 
   it('runs one at a time and follows up once for calls made meanwhile', async () => {

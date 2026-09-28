@@ -7,22 +7,30 @@ motivational quote from the categories you choose.
   Confidence. Pick any combination; quotes only come from those.
 - **No repeats:** a quote comes back only after every quote in your selected categories has been
   shown.
+- **Made for your screen:** each wallpaper is drawn at your phone's resolution on one of six calm
+  backgrounds, with the quote in the lower middle, clear of the lock screen clock.
+- **Changes every day:** Android sets the lock and/or home screen at the time you choose; on
+  iPhone a one-time Shortcuts automation does it (the app explains how).
+- **Yours to shape:** favourites, your own quotes, past wallpapers, a light and dark theme.
 - **Local only:** settings, favourites and history stay on the device. No account, no backend.
 
 ## Requirements
 
 - Node.js 20 or newer and npm
-- A phone with **Expo Go** (stages 1–2) and, from stage 3, a **development build** of this app
+- A **development build** of the app on your phone (it includes the app's own Android wallpaper
+  module, which Expo Go can't load; see [Stage 3](#stage-3--daily-scheduling-and-wallpaper-setting)
+  for how to build it). Stages 1–2 can also be tried in Expo Go.
 
 ## Getting started
 
 ```sh
 npm install
-npx expo start --go   # stages 1–2: open in Expo Go
+npx expo start        # then open the project from the development build on your phone
+npx expo start --go   # stages 1–2 only: open in Expo Go instead
 ```
 
-Scan the QR code with the Camera app (iPhone) or with Expo Go (Android). The phone and computer
-must be on the same Wi-Fi; if they can't see each other, use `npx expo start --go --tunnel`.
+Scan the QR code with the Camera app (iPhone) or the development build / Expo Go (Android). The
+phone and computer must be on the same Wi-Fi; if they can't see each other, add `--tunnel`.
 
 ## Testing each stage on your phone
 
@@ -132,6 +140,42 @@ This stage only changes JavaScript, so keep using the development build from Sta
 Your quotes join the no-repeat rotation of their category, so each comes up once per cycle like
 the bundled ones.
 
+### Stage 5 — polish
+
+This stage has a new app icon and splash screen, which are built into the app, so **rebuild the
+development build once** (same commands as in Stage 3) and install it over the old one. Then run
+`npx expo start` as usual.
+
+1. **Introduction:** a fresh install opens with three short steps: today's wallpaper, your themes,
+   and the change time (Android: which screens to set; iPhone: a **Show me how** link to the
+   Shortcuts guide). Your phone is already set up, so to see it use **Settings → Show the
+   introduction again**. Nothing changes on your screens until you tap **Start**.
+2. **Full-screen preview:** tap the wallpaper on **Today**. It fills the screen under a lock screen
+   clock, so you can see the quote stays clear of it. Tap anywhere to close.
+3. **Past wallpapers:** tap the clock button at the top of **Today**. Earlier days are listed with
+   their background; tap one to see it full screen, or its heart to keep it. The list fills up as
+   the days go by.
+4. **Backgrounds:** **Settings → Backgrounds** shows each style drawn small. Tap styles to turn
+   them off or on (one always stays on); **New quote** and upcoming days then only use the ones
+   that are on.
+5. **Icon:** the home screen shows the new sage icon. On iPhone (iOS 18 or later) switch the home
+   screen to dark or tinted icons to see those versions; on Android 13 or later, turn on themed
+   icons.
+6. **Accessibility:** with VoiceOver or TalkBack on, messages such as "Added to favourites" are
+   read out and the introduction announces each step. Text meets WCAG AA contrast in both themes,
+   and the Today buttons stay on one row with the largest text sizes.
+
+## Known limitations
+
+- **iPhone:** apps can't change the wallpaper themselves, so the Shortcuts automation is needed.
+  With the Photos method, today's image only reaches the album when the app runs (opening it, or a
+  background refresh), which is why the Files method is recommended.
+- **Android:** some phone makers' battery savers delay or skip alarms for apps that aren't opened
+  often. If the wallpaper changes late or not at all, set the app's battery use to
+  **Unrestricted** (Settings → Apps → Daily Quote Wallpaper → Battery).
+- Wallpapers are drawn for the screen size the app last saw. After changing display size or
+  moving to a new phone, open the app once to redraw them.
+
 ## Development
 
 ```sh
@@ -141,13 +185,15 @@ npm test                # unit tests: quote library, no-repeat rotation, plannin
 npm run typecheck       # TypeScript (app and scripts)
 npm run lint            # ESLint
 npm run render:samples  # sample wallpapers for every style in samples/
+npm run make:icons      # redraws the app icon, its variants, splash image and favicon
 ```
 
 ### Project structure
 
 ```
-src/app/            Expo Router screens: tabs (Today, Favourites, My Quotes, Settings), the quote
-                    editor and the iPhone automation guide
+src/app/            Expo Router screens: tabs (Today, Favourites, My Quotes, Settings), the
+                    introduction, quote editor, full-screen preview, past wallpapers and the
+                    iPhone automation guide
 src/data/           quotes.json — the bundled quote library
 src/domain/         Pure TypeScript logic: categories, quote pool, no-repeat picker, daily plan
 src/wallpaper/      Skia renderer: six styles, text layout, device fonts, image files
@@ -156,10 +202,13 @@ src/store/          Zustand stores persisted to AsyncStorage (settings, daily pl
 src/scheduling/     Pre-rendering upcoming days, background task, Android and iOS hand-off
 src/services/       Saving to Photos, sharing, and quote actions (use today, share as text)
 modules/daily-wallpaper/  Local Expo module (Kotlin): sets the Android wallpaper, daily alarm, reboot handling
-src/components/     Shared UI (text, buttons, cards, category picker, wallpaper preview)
+src/components/     Shared UI (text, buttons, cards, category and style pickers, wallpaper preview)
+src/hooks/          Keeping the plan, rendered files and platform schedule in step with the app
 src/theme/          Colours for light/dark mode, spacing and typography
-scripts/            Sample renderer (Node + CanvasKit) and web helpers
+scripts/            Sample renderer and icon generator (Node + CanvasKit), web helpers
 assets/fonts/       Bundled fonts (SIL Open Font License, see OFL.txt)
+assets/images/      App icon and variants, Android adaptive icon layers, splash (npm run make:icons)
+assets/guide/       Illustrations for the iPhone automation guide
 ```
 
 ## How wallpapers are drawn

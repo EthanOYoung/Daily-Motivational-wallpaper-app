@@ -7,6 +7,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { AppText } from '@/components/AppText';
 import { ActionButton, Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { IconButton } from '@/components/IconButton';
 import { Screen } from '@/components/Screen';
 import { showToast } from '@/components/Toast';
 import { WallpaperPreview } from '@/components/WallpaperPreview';
@@ -124,8 +125,17 @@ export default function TodayScreen() {
     );
   }
 
+  const historyButton = (
+    <IconButton
+      icon="time-outline"
+      variant="secondary"
+      accessibilityLabel="Past wallpapers"
+      onPress={() => router.push('/history')}
+    />
+  );
+
   return (
-    <Screen title="Today" subtitle={formatDateKey(today)}>
+    <Screen title="Today" subtitle={formatDateKey(today)} headerAccessory={historyButton}>
       <WallpaperPreview
         image={wallpaper.image}
         loading={wallpaper.loading}
@@ -135,6 +145,8 @@ export default function TodayScreen() {
         accessibilityLabel={`Today's wallpaper: ${entry.quote.text}${
           entry.quote.author ? ` — ${entry.quote.author}` : ''
         }`}
+        accessibilityHint="Shows it full screen under a lock screen clock"
+        onPress={() => router.push({ pathname: '/preview', params: { date: today } })}
       />
       <AppText variant="caption" tone="tertiary" style={styles.caption}>
         {getCategory(entry.quote.category).label} · {getStyleInfo(entry.styleId).name}

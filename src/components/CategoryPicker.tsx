@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { CATEGORIES } from '@/domain/categories';
@@ -6,6 +7,7 @@ import type { CategoryId } from '@/domain/types';
 import { radii, spacing, useAppTheme } from '@/theme';
 
 import { AppText } from './AppText';
+import { showToast } from './Toast';
 
 interface CategoryPickerProps {
   selected: readonly CategoryId[];
@@ -33,7 +35,14 @@ export function CategoryPicker({ selected, onToggle, counts }: CategoryPickerPro
             accessibilityHint={
               locked ? 'At least one category has to stay selected' : category.description
             }
-            onPress={() => onToggle(category.id)}
+            onPress={() => {
+              if (locked) {
+                showToast('Keep at least one category on');
+                return;
+              }
+              Haptics.selectionAsync().catch(() => {});
+              onToggle(category.id);
+            }}
             style={({ pressed }) => [
               styles.tile,
               {

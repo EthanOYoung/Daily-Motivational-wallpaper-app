@@ -121,7 +121,8 @@ export function ActionButton({
           <Ionicons name={icon} size={22} color={tint} />
         )}
       </View>
-      <AppText variant="caption" tone="secondary">
+      {/* Four of these share a row, so cap how far the caption grows with large text. */}
+      <AppText variant="caption" tone="secondary" maxFontSizeMultiplier={1.3}>
         {label}
       </AppText>
     </Pressable>

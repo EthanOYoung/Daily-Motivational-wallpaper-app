@@ -12,6 +12,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "render:samples": "tsx --tsconfig scripts/tsconfig.json scripts/render-samples.ts",
+    "make:icons": "tsx --tsconfig scripts/tsconfig.json scripts/make-icons.ts",
     "web": "node scripts/copy-canvaskit.cjs && expo start --web"
   },
   "dependencies": {

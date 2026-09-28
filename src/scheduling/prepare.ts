@@ -63,7 +63,9 @@ async function prepare(reason: PrepareReason): Promise<PrepareResult> {
     useRenderStore.getState().prune(keep);
     useSchedulingStore.getState().pruneAlbumSaves(keep);
 
-    if (Platform.OS === 'android') {
+    if (!useSettingsStore.getState().onboarded) {
+      // Leave the wallpaper and the schedule alone until the introduction is finished.
+    } else if (Platform.OS === 'android') {
       await syncAndroidSchedule();
       await applyTodayIfDue();
       refreshAndroidStatus();

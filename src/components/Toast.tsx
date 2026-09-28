@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Animated, StyleSheet } from 'react-native';
+import { AccessibilityInfo, Animated, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { create } from 'zustand';
 
@@ -24,6 +24,8 @@ const useToastStore = create<ToastState>()((set) => ({
 /** Shows a short, self-dismissing message at the bottom of the screen. */
 export function showToast(message: string) {
   useToastStore.getState().show(message);
+  // Screen readers don't notice a view appearing, so read the message out.
+  AccessibilityInfo.announceForAccessibility(message);
 }
 
 /** Renders the current toast; mount once near the root. */
@@ -48,8 +50,8 @@ export function ToastHost() {
   if (!message) return null;
   return (
     <Animated.View
-      accessibilityLiveRegion="polite"
-      accessibilityRole="alert"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
       pointerEvents="none"
       style={[
         styles.toast,

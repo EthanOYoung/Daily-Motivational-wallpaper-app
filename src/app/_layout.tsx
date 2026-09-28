@@ -10,6 +10,7 @@ import { useDayTicker } from '@/hooks/useDayTicker';
 import { usePlanSync } from '@/hooks/usePlanSync';
 import { useWallpaperPipeline } from '@/hooks/useWallpaperPipeline';
 import { useStoresHydrated } from '@/store/hydration';
+import { useSettingsStore } from '@/store/settings';
 import { useAppTheme } from '@/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -28,6 +29,7 @@ export default function RootLayout() {
     Lora_600SemiBold: require('../../assets/fonts/Lora_600SemiBold.ttf'),
   });
   const hydrated = useStoresHydrated();
+  const onboarded = useSettingsStore((s) => s.onboarded);
   const { scheme, colors } = useAppTheme();
   const ready = (fontsLoaded || !!fontError) && hydrated;
 
@@ -70,14 +72,25 @@ export default function RootLayout() {
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <AppEffects />
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
+        {/* Finishing (or restarting) the introduction flips the guards and switches screens. */}
+        <Stack.Protected guard={onboarded}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen
+            name="quote-editor"
+            options={{ ...headerOptions, title: 'New quote', presentation: 'modal' }}
+          />
+          <Stack.Screen
+            name="preview"
+            options={{ presentation: 'fullScreenModal', animation: 'fade' }}
+          />
+          <Stack.Screen name="history" options={{ ...headerOptions, title: 'Past wallpapers' }} />
+        </Stack.Protected>
+        <Stack.Protected guard={!onboarded}>
+          <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
+        </Stack.Protected>
         <Stack.Screen
           name="shortcut-guide"
           options={{ ...headerOptions, title: 'Automatic wallpaper' }}
-        />
-        <Stack.Screen
-          name="quote-editor"
-          options={{ ...headerOptions, title: 'New quote', presentation: 'modal' }}
         />
       </Stack>
       <ToastHost />

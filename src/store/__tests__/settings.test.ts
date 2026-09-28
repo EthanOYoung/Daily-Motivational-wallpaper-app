@@ -1,3 +1,4 @@
+import { STYLE_IDS } from '@/domain/styles';
 import { CATEGORY_IDS } from '@/domain/types';
 
 import { DEFAULT_SETTINGS, useSettingsStore } from '../settings';
@@ -29,5 +30,25 @@ describe('settings store', () => {
     expect(useSettingsStore.getState().selectedCategories).toEqual(['family']);
     setCategories([]);
     expect(useSettingsStore.getState().selectedCategories).toEqual(['family']);
+  });
+
+  it('turns background styles on and off, keeping at least one', () => {
+    const { toggleStyle } = useSettingsStore.getState();
+    for (const id of STYLE_IDS) toggleStyle(id);
+    expect(useSettingsStore.getState().enabledStyles).toEqual(['dusk']);
+    toggleStyle('sage');
+    toggleStyle('dawn');
+    expect(useSettingsStore.getState().enabledStyles).toEqual(['dawn', 'sage', 'dusk']);
+  });
+
+  it('shows the introduction on a fresh install only', () => {
+    expect(useSettingsStore.getState().onboarded).toBe(false);
+    const { migrate } = useSettingsStore.persist.getOptions();
+    // Settings saved by a version without the introduction: that person has used the app.
+    expect(migrate!({ selectedCategories: ['family'] }, 1)).toEqual({
+      selectedCategories: ['family'],
+      onboarded: true,
+    });
+    expect(migrate!({ onboarded: false }, 2)).toEqual({ onboarded: false });
   });
 });

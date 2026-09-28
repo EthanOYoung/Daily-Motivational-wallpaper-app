@@ -1,11 +1,11 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
+import { IconButton } from '@/components/IconButton';
 import { QuoteBlock } from '@/components/QuoteBlock';
 import { Screen } from '@/components/Screen';
 import { TextAction } from '@/components/TextAction';
@@ -13,25 +13,7 @@ import { getCategory } from '@/domain/categories';
 import { showQuoteToday } from '@/services/quoteActions';
 import { useLibraryStore } from '@/store/library';
 import { useSettingsStore } from '@/store/settings';
-import { spacing, useAppTheme } from '@/theme';
-
-function AddButton() {
-  const { colors } = useAppTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Add a quote"
-      onPress={() => router.push('/quote-editor')}
-      hitSlop={8}
-      style={({ pressed }) => [
-        styles.addButton,
-        { backgroundColor: colors.accent, opacity: pressed ? 0.8 : 1 },
-      ]}
-    >
-      <Ionicons name="add" size={24} color={colors.onAccent} />
-    </Pressable>
-  );
-}
+import { spacing } from '@/theme';
 
 export default function MyQuotesScreen() {
   const customQuotes = useLibraryStore((s) => s.customQuotes);
@@ -41,7 +23,15 @@ export default function MyQuotesScreen() {
     <Screen
       title="My Quotes"
       subtitle={customQuotes.length ? `${customQuotes.length} of your own` : undefined}
-      headerAccessory={customQuotes.length ? <AddButton /> : null}
+      headerAccessory={
+        customQuotes.length ? (
+          <IconButton
+            icon="add"
+            accessibilityLabel="Add a quote"
+            onPress={() => router.push('/quote-editor')}
+          />
+        ) : null
+      }
     >
       {customQuotes.length === 0 ? (
         <EmptyState
@@ -98,13 +88,5 @@ const styles = StyleSheet.create({
   list: { gap: spacing.md },
   card: { gap: spacing.md },
   actions: { flexDirection: 'row', alignItems: 'center', marginLeft: -spacing.sm },
-  addButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xs,
-  },
   emptyButton: { marginTop: spacing.lg, alignSelf: 'stretch' },
 });

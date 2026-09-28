@@ -47,6 +47,7 @@ export function SegmentedControl<T extends string>({
               variant="callout"
               tone={selected ? 'primary' : 'secondary'}
               style={styles.label}
+              maxFontSizeMultiplier={1.4}
             >
               {option.label}
             </AppText>
